@@ -29,3 +29,4 @@ variable "project_name" {
   type        = string
   default     = "gomboc-test"
 }
+# Trigger Gomboc scan
