@@ -260,3 +260,4 @@ output "database_endpoint" {
 output "file_upload_bucket" {
   value = aws_s3_bucket.file_uploads.bucket
 }
+# Testing scenario scanning
