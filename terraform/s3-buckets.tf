@@ -7,7 +7,7 @@ resource "aws_s3_bucket_public_access_block" "public_website" {
 
   block_public_acls       = false
   block_public_policy     = false
-  ignore_public_acls      = false
+  ignore_public_acls      = true
   restrict_public_buckets = false
 }
 
@@ -51,4 +51,40 @@ resource "random_string" "bucket_suffix" {
   length  = 8
   special = false
   upper   = false
+}
+resource "aws_s3_bucket_public_access_block" "my_aws_s3_bucket_public_access_block_aws_s3_bucket_data_storage" {
+  bucket             = aws_s3_bucket.data_storage.id
+  ignore_public_acls = true
+}
+resource "aws_s3_bucket_public_access_block" "my_aws_s3_bucket_public_access_block_aws_s3_bucket_backup_storage" {
+  bucket             = aws_s3_bucket.backup_storage.id
+  ignore_public_acls = true
+}
+resource "aws_s3_bucket_public_access_block" "my_aws_s3_bucket_public_access_block_aws_s3_bucket_app_logs" {
+  bucket             = aws_s3_bucket.app_logs.id
+  ignore_public_acls = true
+}
+resource "aws_s3_bucket_versioning" "my_aws_s3_bucket_versioning_aws_s3_bucket_public_website" {
+  bucket = aws_s3_bucket.public_website.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+resource "aws_s3_bucket_versioning" "my_aws_s3_bucket_versioning_aws_s3_bucket_data_storage" {
+  bucket = aws_s3_bucket.data_storage.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+resource "aws_s3_bucket_versioning" "my_aws_s3_bucket_versioning_aws_s3_bucket_backup_storage" {
+  bucket = aws_s3_bucket.backup_storage.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+resource "aws_s3_bucket_versioning" "my_aws_s3_bucket_versioning_aws_s3_bucket_app_logs" {
+  bucket = aws_s3_bucket.app_logs.id
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
