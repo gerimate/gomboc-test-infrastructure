@@ -81,6 +81,9 @@ resource "aws_instance" "web_server" {
   tags = {
     Name = "${var.project_name}-web-${count.index + 1}"
   }
+  tenancy                 = "dedicated"
+  disable_api_termination = true
+  monitoring              = true
 }
 
 resource "aws_key_pair" "main" {
@@ -91,7 +94,7 @@ resource "aws_key_pair" "main" {
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
-  
+
   filter {
     name   = "name"
     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
