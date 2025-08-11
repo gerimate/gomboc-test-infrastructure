@@ -273,3 +273,5 @@ output "azure_storage_encryption" {
   value = "DISABLED - Security gap!"
   description = "Azure Storage encryption status"
 }
+# Testing multi-cloud context awareness
+# Cross-provider security inconsistencies
