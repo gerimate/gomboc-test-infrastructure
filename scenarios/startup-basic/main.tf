@@ -92,30 +92,32 @@ resource "aws_security_group" "database" {
 }
 
 resource "aws_db_instance" "startup_db" {
-  allocated_storage    = 20
-  storage_type         = "gp2"
-  engine               = "mysql"
-  engine_version       = "8.0"
-  instance_class       = "db.t3.micro"
-  identifier           = "startup-database"
-  
+  allocated_storage = 20
+  storage_type      = "gp2"
+  engine            = "mysql"
+  engine_version    = "8.0"
+  instance_class    = "db.t3.micro"
+  identifier        = "startup-database"
+
   db_name  = "startupapp"
   username = "admin"
   password = "StartupPass123!"
-  
-  publicly_accessible    = true
-  storage_encrypted      = false
+
+  publicly_accessible     = false
+  storage_encrypted       = false
   backup_retention_period = 0
-  skip_final_snapshot    = true
-  deletion_protection    = false
-  
+  skip_final_snapshot     = true
+  deletion_protection     = true
+
   db_subnet_group_name   = aws_db_subnet_group.startup.name
   vpc_security_group_ids = [aws_security_group.database.id]
 
   tags = {
-    Name = "startup-database"
+    Name        = "startup-database"
     Environment = "production"
   }
+  iam_database_authentication_enabled = true
+  multi_az                            = true
 }
 
 resource "aws_db_subnet_group" "startup" {
@@ -175,10 +177,10 @@ resource "aws_instance" "web_server" {
   ami           = "ami-0c02fb55956c7d316"
   instance_type = "t3.micro"
   subnet_id     = aws_subnet.public.id
-  
+
   vpc_security_group_ids      = [aws_security_group.web.id]
   associate_public_ip_address = true
-  
+
   root_block_device {
     volume_type = "gp3"
     volume_size = 8
@@ -201,16 +203,19 @@ resource "aws_instance" "web_server" {
   EOF
 
   tags = {
-    Name = "startup-web-server"
+    Name        = "startup-web-server"
     Environment = "production"
   }
+  tenancy                 = "dedicated"
+  disable_api_termination = true
+  monitoring              = true
 }
 
 resource "aws_s3_bucket" "file_uploads" {
   bucket = "startup-file-uploads-${random_id.bucket_suffix.hex}"
 
   tags = {
-    Name = "startup-file-uploads"
+    Name        = "startup-file-uploads"
     Environment = "production"
   }
 }
@@ -240,7 +245,7 @@ resource "aws_s3_bucket_public_access_block" "file_uploads" {
 
   block_public_acls       = false
   block_public_policy     = false
-  ignore_public_acls      = false
+  ignore_public_acls      = true
   restrict_public_buckets = false
 }
 
@@ -253,7 +258,7 @@ output "website_url" {
 }
 
 output "database_endpoint" {
-  value = aws_db_instance.startup_db.endpoint
+  value     = aws_db_instance.startup_db.endpoint
   sensitive = false
 }
 
@@ -261,3 +266,9 @@ output "file_upload_bucket" {
   value = aws_s3_bucket.file_uploads.bucket
 }
 # Testing scenario scanning
+resource "aws_s3_bucket_versioning" "my_aws_s3_bucket_versioning_aws_s3_bucket_file_uploads" {
+  bucket = aws_s3_bucket.file_uploads.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
