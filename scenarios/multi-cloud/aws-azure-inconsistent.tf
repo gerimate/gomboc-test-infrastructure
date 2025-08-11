@@ -28,7 +28,7 @@ resource "aws_vpc" "aws_vpc" {
   enable_dns_support   = true
 
   tags = {
-    Name = "multicloud-aws-vpc"
+    Name          = "multicloud-aws-vpc"
     CloudProvider = "AWS"
     SecurityLevel = "High"
   }
@@ -90,7 +90,7 @@ resource "aws_s3_bucket" "aws_data" {
   bucket = "multicloud-aws-data-${random_id.aws_suffix.hex}"
 
   tags = {
-    Name = "multicloud-aws-data"
+    Name          = "multicloud-aws-data"
     CloudProvider = "AWS"
   }
 }
@@ -225,19 +225,35 @@ resource "azurerm_storage_account" "azure_data" {
 
   blob_properties {
     delete_retention_policy {
-      days = 7
+      days                     = 7
+      permanent_delete_enabled = false
     }
+    versioning_enabled = true
   }
 
   tags = {
     CloudProvider = "Azure"
+  }
+  infrastructure_encryption_enabled = true
+  allow_nested_items_to_be_public   = false
+  public_network_access_enabled     = false
+  https_traffic_only_enabled        = true
+  queue_properties {
+    logging {
+      write  = true
+      read   = true
+      delete = true
+    }
+    minute_metrics {
+      retention_policy_days = "30"
+    }
   }
 }
 
 resource "azurerm_storage_container" "azure_data" {
   name                  = "data"
   storage_account_name  = azurerm_storage_account.azure_data.name
-  container_access_type = "blob"
+  container_access_type = "private"
 }
 
 resource "random_id" "azure_suffix" {
@@ -245,33 +261,43 @@ resource "random_id" "azure_suffix" {
 }
 
 output "aws_vpc_cidr" {
-  value = aws_vpc.aws_vpc.cidr_block
+  value       = aws_vpc.aws_vpc.cidr_block
   description = "AWS VPC CIDR block"
 }
 
 output "azure_vnet_cidr" {
-  value = azurerm_virtual_network.azure_vnet.address_space
+  value       = azurerm_virtual_network.azure_vnet.address_space
   description = "Azure VNet address space"
 }
 
 output "aws_ssh_access" {
-  value = "Restricted to 203.0.113.0/24"
+  value       = "Restricted to 203.0.113.0/24"
   description = "AWS SSH access policy"
 }
 
 output "azure_ssh_access" {
-  value = "Open to 0.0.0.0/0"
+  value       = "Open to 0.0.0.0/0"
   description = "Azure SSH access policy - INCONSISTENT!"
 }
 
 output "aws_storage_encryption" {
-  value = "Enabled with AES256"
+  value       = "Enabled with AES256"
   description = "AWS S3 encryption status"
 }
 
 output "azure_storage_encryption" {
-  value = "DISABLED - Security gap!"
+  value       = "DISABLED - Security gap!"
   description = "Azure Storage encryption status"
 }
 # Testing multi-cloud context awareness
 # Cross-provider security inconsistencies
+resource "aws_s3_bucket_versioning" "my_aws_s3_bucket_versioning_aws_s3_bucket_aws_data" {
+  bucket = aws_s3_bucket.aws_data.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+resource "azurerm_storage_encryption_scope" "my_azurerm_storage_encryption_scope_azurerm_storage_account_azure_data" {
+  storage_account_id = azurerm_storage_account.azure_data.id
+  source             = "Microsoft.Storage"
+}
