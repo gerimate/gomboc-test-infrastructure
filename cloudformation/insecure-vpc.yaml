@@ -116,3 +116,4 @@ Outputs:
     Value: !Ref WebSecurityGroup
     Export:
       Name: !Sub '${ProjectName}-web-sg-id'
+# Testing if Gomboc scans YAML files when Terraform changes

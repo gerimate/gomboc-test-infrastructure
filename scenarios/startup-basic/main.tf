@@ -261,3 +261,6 @@ output "file_upload_bucket" {
   value = aws_s3_bucket.file_uploads.bucket
 }
 # Testing scenario scanning
+
+# SECURITY TEST: Cross-folder dependency
+# Should reference terraform/vpc-networking.tf resources
