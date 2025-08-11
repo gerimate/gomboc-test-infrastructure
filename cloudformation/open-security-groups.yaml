@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Insecure security groups for Gomboc AI testing'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: gomboc-test-cf
+    Description: Name prefix for resources
+  
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID where security groups will be created
+
+Resources:
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Insecure database security group
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0
+          Description: MySQL access from anywhere
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0
+          Description: PostgreSQL access from anywhere
+        - IpProtocol: tcp
+          FromPort: 27017
+          ToPort: 27017
+          CidrIp: 0.0.0.0/0
+          Description: MongoDB access from anywhere
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          CidrIp: 0.0.0.0/0
+          Description: Redis access from anywhere
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-db-sg'
+
+  AdminSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Insecure admin access security group
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH from anywhere
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 0.0.0.0/0
+          Description: RDP from anywhere
+        - IpProtocol: tcp
+          FromPort: 5985
+          ToPort: 5985
+          CidrIp: 0.0.0.0/0
+          Description: WinRM HTTP from anywhere
+        - IpProtocol: tcp
+          FromPort: 5986
+          ToPort: 5986
+          CidrIp: 0.0.0.0/0
+          Description: WinRM HTTPS from anywhere
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-admin-sg'
+
+  ApplicationSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Insecure application security group
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8999
+          CidrIp: 0.0.0.0/0
+          Description: Application ports from anywhere
+        - IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9200
+          CidrIp: 0.0.0.0/0
+          Description: Elasticsearch from anywhere
+        - IpProtocol: tcp
+          FromPort: 5601
+          ToPort: 5601
+          CidrIp: 0.0.0.0/0
+          Description: Kibana from anywhere
+        - IpProtocol: tcp
+          FromPort: 2376
+          ToPort: 2376
+          CidrIp: 0.0.0.0/0
+          Description: Docker daemon from anywhere
+        - IpProtocol: tcp
+          FromPort: 6443
+          ToPort: 6443
+          CidrIp: 0.0.0.0/0
+          Description: Kubernetes API from anywhere
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: All outbound traffic
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-app-sg'
+
+  ManagementSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Insecure management security group
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: udp
+          FromPort: 161
+          ToPort: 161
+          CidrIp: 0.0.0.0/0
+          Description: SNMP from anywhere
+        - IpProtocol: tcp
+          FromPort: 23
+          ToPort: 23
+          CidrIp: 0.0.0.0/0
+          Description: Telnet from anywhere
+        - IpProtocol: tcp
+          FromPort: 21
+          ToPort: 21
+          CidrIp: 0.0.0.0/0
+          Description: FTP from anywhere
+        - IpProtocol: tcp
+          FromPort: 25
+          ToPort: 25
+          CidrIp: 0.0.0.0/0
+          Description: SMTP from anywhere
+        - IpProtocol: tcp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+          Description: DNS TCP from anywhere
+        - IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+          Description: DNS UDP from anywhere
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-mgmt-sg'
+
+Outputs:
+  DatabaseSecurityGroupId:
+    Description: Database Security Group ID
+    Value: !Ref DatabaseSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-db-sg-id'
+      
+  AdminSecurityGroupId:
+    Description: Admin Security Group ID
+    Value: !Ref AdminSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-admin-sg-id'
+      
+  ApplicationSecurityGroupId:
+    Description: Application Security Group ID
+    Value: !Ref ApplicationSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-app-sg-id'
+      
+  ManagementSecurityGroupId:
+    Description: Management Security Group ID
+    Value: !Ref ManagementSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-mgmt-sg-id'

@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Unencrypted storage resources for Gomboc AI testing'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: gomboc-test-cf
+    Description: Name prefix for resources
+
+Resources:
+  PublicBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-public-bucket-${AWS::AccountId}'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-public-bucket'
+
+  PublicBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PublicBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub '${PublicBucket}/*'
+          - Sid: PublicPutObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:PutObject'
+            Resource: !Sub '${PublicBucket}/*'
+
+  UnencryptedVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 20
+      VolumeType: gp3
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Encrypted: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-unencrypted-volume'
+
+  UnencryptedDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub '${ProjectName}-unencrypted-db'
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      EngineVersion: '8.0'
+      AllocatedStorage: 20
+      StorageType: gp2
+      StorageEncrypted: false
+      MasterUsername: admin
+      MasterUserPassword: insecurepassword123
+      BackupRetentionPeriod: 0
+      DeletionProtection: false
+      SkipFinalSnapshot: true
+      PubliclyAccessible: true
+      MonitoringInterval: 0
+      AutoMinorVersionUpgrade: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-unencrypted-db'
+
+  UnencryptedFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: false
+      PerformanceMode: generalPurpose
+      ThroughputMode: provisioned
+      ProvisionedThroughputInMibps: 100
+      FileSystemTags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-unencrypted-efs'
+
+  UnencryptedDynamoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-unencrypted-table'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-unencrypted-dynamo'
+
+  UnencryptedTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${ProjectName}-unencrypted-topic'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-unencrypted-topic'
+
+  UnencryptedQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-unencrypted-queue'
+      VisibilityTimeoutSeconds: 30
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-unencrypted-queue'
+
+  UnencryptedLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-unencrypted-lambda'
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {'statusCode': 200, 'body': 'Hello World'}
+      Environment:
+        Variables:
+          DATABASE_PASSWORD: plaintext_password_123
+          API_KEY: super_secret_api_key_456
+          SECRET_TOKEN: unencrypted_token_789
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-unencrypted-lambda'
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+Outputs:
+  PublicBucketName:
+    Description: Public S3 Bucket Name
+    Value: !Ref PublicBucket
+    Export:
+      Name: !Sub '${ProjectName}-public-bucket-name'
+      
+  UnencryptedVolumeId:
+    Description: Unencrypted EBS Volume ID
+    Value: !Ref UnencryptedVolume
+    Export:
+      Name: !Sub '${ProjectName}-unencrypted-volume-id'
+      
+  UnencryptedDatabaseEndpoint:
+    Description: Unencrypted RDS Database Endpoint
+    Value: !GetAtt UnencryptedDatabase.Endpoint.Address
+    Export:
+      Name: !Sub '${ProjectName}-unencrypted-db-endpoint'
+      
+  UnencryptedFileSystemId:
+    Description: Unencrypted EFS File System ID
+    Value: !Ref UnencryptedFileSystem
+    Export:
+      Name: !Sub '${ProjectName}-unencrypted-efs-id'
